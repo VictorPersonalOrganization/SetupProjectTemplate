@@ -1,4 +1,4 @@
-name: Unity Build (Windows)
+name: Unity Build (Self-Hosted PC)
 
 on:
   push:
@@ -11,15 +11,15 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  UNITY_VERSION: "6000.5.4f1"      # Exemple : "6000.4.11f1" ou "2022.3.20f1"
-  PROJECT_FOLDER: "."     # Exemple : "Mortier FU" ou "MonProjetUnity" (nom du dossier racine du projet donc . si racine est projet)
-  BUILD_METHOD: "BuildScript.BuildWindows"       # Exemple : "BuildScript.BuildWindows" (Classe.Methode appelée dans Unity)
-  BUILD_OUTPUT_DIR: "Builds/Windows"   # Exemple : "Builds/Windows" (dossier relatif au projet où sortir le build)
-  EXE_NAME: "SetupProjectTemplate.exe"           # Exemple : "Jeu.exe" ou "MortierFU.exe"
+  UNITY_VERSION: "6000.5.4f1"
+  PROJECT_FOLDER: "."
+  BUILD_METHOD: "BuildScript.BuildWindows"
+  BUILD_OUTPUT_DIR: "Builds/Windows"
+  EXE_NAME: "SetupProjectTemplate.exe"
 
 jobs:
-  build:
-    name: Build Windows
+  build-local:
+    name: Build Local (Self-Hosted PC)
     runs-on:
       - self-hosted
       - windows
@@ -37,17 +37,17 @@ jobs:
       - name: Zip Build
         shell: powershell
         run: |
-          $buildPath = "${env:PROJECT_FOLDER}\${env:BUILD_OUTPUT_DIR}"
-          $zipPath = "${env:PROJECT_FOLDER}\Builds\Build-Windows.zip"
+          $buildPath = "${env:BUILD_OUTPUT_DIR}"
+          $zipDir = "Builds"
+          $zipPath = "$zipDir\Build-Windows-Local.zip"
+          if (-not (Test-Path $zipDir)) { New-Item -ItemType Directory -Path $zipDir }
           if (Test-Path $buildPath) {
               Compress-Archive -Path "$buildPath\*" -DestinationPath $zipPath -Force
-          } else {
-              Write-Host "Le dossier de build Windows est introuvable."
           }
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Build-Windows
-          path: ${{ env.PROJECT_FOLDER }}/Builds/Build-Windows.zip
+          name: Build-Windows-Local
+          path: Builds/Build-Windows-Local.zip
           if-no-files-found: ignore
