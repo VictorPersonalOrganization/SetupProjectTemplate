@@ -1,0 +1,53 @@
+name: Unity Build (Windows)
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+concurrency:
+  group: unity-build-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UNITY_VERSION: "6000.5.4f1"      # Exemple : "6000.4.11f1" ou "2022.3.20f1"
+  PROJECT_FOLDER: "."     # Exemple : "Mortier FU" ou "MonProjetUnity" (nom du dossier racine du projet donc . si racine est projet)
+  BUILD_METHOD: "BuildScript.BuildWindows"       # Exemple : "BuildScript.BuildWindows" (Classe.Methode appelée dans Unity)
+  BUILD_OUTPUT_DIR: "Builds/Windows"   # Exemple : "Builds/Windows" (dossier relatif au projet où sortir le build)
+  EXE_NAME: "SetupProjectTemplate.exe"           # Exemple : "Jeu.exe" ou "MortierFU.exe"
+
+jobs:
+  build:
+    name: Build Windows
+    runs-on:
+      - self-hosted
+      - windows
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          clean: false
+
+      - name: Build Executable
+        shell: cmd
+        run: '"C:\Program Files\Unity\Hub\Editor\%UNITY_VERSION%\Editor\Unity.exe" -batchmode -quit -projectPath "%GITHUB_WORKSPACE%\%PROJECT_FOLDER%" -executeMethod %BUILD_METHOD% -customBuildDir "%BUILD_OUTPUT_DIR%" -customExeName "%EXE_NAME%" -logFile -'
+
+      - name: Zip Build
+        shell: powershell
+        run: |
+          $buildPath = "${env:PROJECT_FOLDER}\${env:BUILD_OUTPUT_DIR}"
+          $zipPath = "${env:PROJECT_FOLDER}\Builds\Build-Windows.zip"
+          if (Test-Path $buildPath) {
+              Compress-Archive -Path "$buildPath\*" -DestinationPath $zipPath -Force
+          } else {
+              Write-Host "Le dossier de build Windows est introuvable."
+          }
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Build-Windows
+          path: ${{ env.PROJECT_FOLDER }}/Builds/Build-Windows.zip
+          if-no-files-found: ignore
