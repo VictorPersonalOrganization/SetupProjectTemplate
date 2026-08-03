@@ -26,8 +26,11 @@ public static class BuildScript
 
         if (report.summary.result != BuildResult.Succeeded)
         {
-            throw new Exception($"Build failed : {report.summary.result}");
+            EditorApplication.Exit(1);
+            return;
         }
+
+        EditorApplication.Exit(0);
     }
 
     private static string GetArg(string name)
